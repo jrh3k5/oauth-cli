@@ -2,8 +2,9 @@ package client
 
 import (
 	"context"
-	"flag"
 	"fmt"
+	"os"
+	"strings"
 )
 
 // FlagDetailsProvider provides the OAuth client ID and secret by reading arguments provided as flags.
@@ -30,12 +31,26 @@ func (p *FlagDetailsProvider) GetDetails(ctx context.Context) (*Details, error) 
 
 func getFlagValues() (string, string, error) {
 	var oauthClientID string
-	flag.StringVar(&oauthClientID, "oauth-client-id", "", "OAuth client ID")
-
 	var oauthClientSecret string
-	flag.StringVar(&oauthClientSecret, "oauth-client-secret", "", "OAuth client secret")
 
-	flag.Parse()
+	for _, osArg := range os.Args {
+		switch {
+		case strings.HasPrefix(osArg, "--oauth-client-id="):
+			splitArg := strings.Split(osArg, "=")
+			if len(splitArg) != 2 {
+				return "", "", fmt.Errorf("invalid flag: %s", osArg)
+			}
+
+			oauthClientID = splitArg[1]
+		case strings.HasPrefix(osArg, "--oauth-client-secret="):
+			splitArg := strings.Split(osArg, "=")
+			if len(splitArg) != 2 {
+				return "", "", fmt.Errorf("invalid flag: %s", osArg)
+			}
+
+			oauthClientSecret = splitArg[1]
+		}
+	}
 
 	if oauthClientID == "" {
 		return "", "", fmt.Errorf("--oauth-client-id is required")
